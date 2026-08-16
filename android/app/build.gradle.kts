@@ -62,6 +62,9 @@ dependencies {
     // 原版 com.arthenica 已于 2025-04 从 Maven Central 移除;xch168 fork 是空壳 AAR,
     // 故使用社区维护的 ffmpegkit-maintained(FFmpeg 8.1,保留原包名)。
     implementation("dev.ffmpegkit-maintained:ffmpeg-kit-min-gpl:8.1.7")
+    // 上面的 fork POM 漏声明了 FFmpegKitConfig 运行时必需的 smart-exception,
+    // 缺失时启动即抛 NoClassDefFoundError,需显式补上
+    implementation("com.arthenica:smart-exception-java:0.2.1")
 
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
     implementation("androidx.activity:activity-compose:1.9.3")
