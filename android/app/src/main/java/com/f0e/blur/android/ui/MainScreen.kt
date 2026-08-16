@@ -283,6 +283,48 @@ private fun SettingsCard(
                 )
             }
             if (settings.interpolate) {
+                Text("插值帧率", style = MaterialTheme.typography.bodyMedium)
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    SegmentedButton(
+                        selected = settings.interpolatedFpsMode == FpsMode.MULTIPLIER,
+                        onClick = {
+                            if (enabled) onUpdate(settings.copy(interpolatedFpsMode = FpsMode.MULTIPLIER))
+                        },
+                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                    ) {
+                        Text("倍数")
+                    }
+                    SegmentedButton(
+                        selected = settings.interpolatedFpsMode == FpsMode.FIXED,
+                        onClick = {
+                            if (enabled) onUpdate(settings.copy(interpolatedFpsMode = FpsMode.FIXED))
+                        },
+                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                    ) {
+                        Text("定值")
+                    }
+                }
+                if (settings.interpolatedFpsMode == FpsMode.MULTIPLIER) {
+                    LabeledSlider(
+                        label = "插值帧率(倍数)",
+                        valueText = "%.1fx".format(settings.interpolatedFpsMultiplier),
+                        value = settings.interpolatedFpsMultiplier,
+                        valueRange = 1f..10f,
+                        enabled = enabled,
+                        hint = "先把视频插值到输入帧率的该倍数再模糊,倍数越高模糊越细腻也越慢(推荐 5x)",
+                        onValueChange = { onUpdate(settings.copy(interpolatedFpsMultiplier = it)) }
+                    )
+                } else {
+                    LabeledSlider(
+                        label = "插值帧率(定值)",
+                        valueText = "${settings.interpolatedFpsFixed} fps",
+                        value = settings.interpolatedFpsFixed.toFloat(),
+                        valueRange = 60f..600f,
+                        enabled = enabled,
+                        onValueChange = { onUpdate(settings.copy(interpolatedFpsFixed = it.toInt())) }
+                    )
+                }
+
                 Text("插值模式", style = MaterialTheme.typography.bodyMedium)
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                     SegmentedButton(

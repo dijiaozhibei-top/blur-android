@@ -10,19 +10,30 @@ class BlurCommandTest {
 
     @Test
     fun `plan matches desktop semantics for typical settings`() {
-        // 输入 60fps,输出 30fps,模糊量 1:混合 2 帧,混合前 60fps
+        // 输入 60fps,默认 5x 插值(源帧率 300),输出 30fps,模糊量 1:混合 10 帧
         val settings = BlurSettings(outputFpsMode = FpsMode.FIXED, outputFpsFixed = 30)
         val plan = BlurCommand.buildPlan(settings, videoFps = 60f) as BlurCommand.PlanResult.Ok
 
-        assertEquals(2, plan.plan.blendedFrames)
+        assertEquals(10, plan.plan.blendedFrames)
         assertEquals(30f, plan.plan.outputFps, 1e-6f)
-        assertEquals(60f, plan.plan.mixFps, 1e-6f)
-        assertEquals(2, plan.plan.weights.size)
+        assertEquals(300f, plan.plan.mixFps, 1e-6f)
+        assertEquals(10, plan.plan.weights.size)
+    }
+
+    @Test
+    fun `default settings blend 5 frames for 60fps input`() {
+        // 桌面版默认场景:60fps 输入,5x 插值,输出 60fps,模糊量 1 → 每输出帧混合 5 帧
+        val settings = BlurSettings() // 全默认
+        val plan = BlurCommand.buildPlan(settings, videoFps = 60f) as BlurCommand.PlanResult.Ok
+
+        assertEquals(5, plan.plan.blendedFrames)
+        assertEquals(60f, plan.plan.outputFps, 1e-6f)
+        assertEquals(300f, plan.plan.mixFps, 1e-6f)
     }
 
     @Test
     fun `higher blur amount widens the window`() {
-        // 模糊量 2:混合 4 帧,混合前 120fps,tmix 后输出仍为 30fps
+        // 模糊量 2:混合 20 帧,混合前 600fps,tmix 后输出仍为 30fps
         val settings = BlurSettings(
             blurAmount = 2f,
             outputFpsMode = FpsMode.FIXED,
@@ -30,13 +41,17 @@ class BlurCommandTest {
         )
         val plan = BlurCommand.buildPlan(settings, videoFps = 60f) as BlurCommand.PlanResult.Ok
 
-        assertEquals(4, plan.plan.blendedFrames)
-        assertEquals(120f, plan.plan.mixFps, 1e-6f)
+        assertEquals(20, plan.plan.blendedFrames)
+        assertEquals(600f, plan.plan.mixFps, 1e-6f)
     }
 
     @Test
-    fun `no blur when output fps reaches input fps`() {
-        val settings = BlurSettings(outputFpsMode = FpsMode.FIXED, outputFpsFixed = 60)
+    fun `no blur when interpolation disabled and output equals input`() {
+        val settings = BlurSettings(
+            outputFpsMode = FpsMode.FIXED,
+            outputFpsFixed = 60,
+            interpolate = false
+        )
         val plan = BlurCommand.buildPlan(settings, videoFps = 60f) as BlurCommand.PlanResult.Ok
 
         assertEquals(0, plan.plan.blendedFrames)
@@ -49,7 +64,7 @@ class BlurCommandTest {
         val settings = BlurSettings(
             blurAmount = 1f,
             outputFpsMode = FpsMode.FIXED,
-            outputFpsFixed = 30,
+            outputFpsFixed = 60,
             interpolate = true,
             quality = 20
         )
@@ -57,8 +72,8 @@ class BlurCommandTest {
         val args = BlurCommand.ffmpegArguments("in.mp4", "out.mp4", settings, plan.plan)
             .joinToString(" ")
 
-        assertTrue(args.contains("minterpolate=fps=60:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1"))
-        assertTrue(args.contains("tmix=frames=2:weights='0.5 0.5'"))
+        assertTrue(args.contains("minterpolate=fps=300:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1"))
+        assertTrue(args.contains("tmix=frames=5:weights='0.2 0.2 0.2 0.2 0.2'"))
         assertTrue(args.contains("-c:v libx264"))
         assertTrue(args.contains("-crf 20"))
         assertTrue(args.contains("-movflags +faststart"))
@@ -74,6 +89,6 @@ class BlurCommandTest {
         val plan = BlurCommand.buildPlan(settings, videoFps = 60f) as BlurCommand.PlanResult.Ok
         val args = BlurCommand.ffmpegArguments("in.mp4", "out.mp4", settings, plan.plan).joinToString(" ")
 
-        assertTrue(args.contains("fps=60,tmix="))
+        assertTrue(args.contains("fps=60,tmix=frames=2"))
     }
 }

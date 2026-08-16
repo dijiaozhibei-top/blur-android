@@ -35,7 +35,10 @@ object BlurCommand {
             return PlanResult.Error("无效的输出帧率")
         }
 
-        val blended = Weighting.blendedFrames(videoFps, outputFps, settings.blurAmount)
+        // 与桌面版 get_weights 语义一致:窗口基于插值后的帧率(而非输入帧率)。
+        // 例:60fps 输入、5x 插值、输出 60fps、模糊量 1 → 混合 5 帧。
+        val sourceFps = settings.blurSourceFps(videoFps)
+        val blended = Weighting.blendedFrames(sourceFps, outputFps, settings.blurAmount)
         val weights = Weighting.getWeights(settings.weighting, blended)
         if (weights.error != null) {
             return PlanResult.Error(weights.error)
