@@ -30,10 +30,8 @@ object VideoProbe {
             val videoStream = info.streams?.firstOrNull { it.type == "video" }
                 ?: return@withContext Result.failure(IllegalStateException("文件中没有视频轨道"))
 
-            val fps = parseFrameRate(
-                videoStream.averageFrameRate,
-                videoStream.rFrameRate
-            ) ?: 30f
+            // ffmpeg-kit 的 Stream 只暴露 averageFrameRate;缺失或为 0 时回退 30fps
+            val fps = parseFrameRate(videoStream.averageFrameRate) ?: 30f
 
             Result.success(
                 VideoInfo(

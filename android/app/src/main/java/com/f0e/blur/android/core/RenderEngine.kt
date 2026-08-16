@@ -55,7 +55,7 @@ class RenderEngine(private val context: Context) {
 
                         else -> RenderResult(
                             false,
-                            error = "FFmpeg 退出码 ${session.returnCode?.value()}\n${logTail.joinToString("\n").takeLast(2000)}"
+                            error = "FFmpeg 退出码 ${session.returnCode?.value}\n${logTail.joinToString("\n").takeLast(2000)}"
                         )
                     }
                     // 协程已取消时 resume 会抛异常,忽略即可

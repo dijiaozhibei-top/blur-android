@@ -62,6 +62,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** UI 控件直接回传完整设置值时使用 */
+    fun setSettings(value: BlurSettings) {
+        updateSettings { value }
+    }
+
     fun pickVideo(uri: Uri) {
         _probing.value = true
         _video.value = null

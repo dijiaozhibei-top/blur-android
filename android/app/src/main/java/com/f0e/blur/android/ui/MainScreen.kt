@@ -86,7 +86,7 @@ fun BlurApp(viewModel: AppViewModel) {
             )
 
             SettingsCard(settings = settings, videoFps = video?.fps, enabled = !rendering) {
-                viewModel.updateSettings(it)
+                viewModel.setSettings(it)
             }
 
             RenderSection(
@@ -299,6 +299,7 @@ private fun SettingsCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WeightingDropdown(
     selected: Weighting.Type,
