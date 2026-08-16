@@ -58,9 +58,9 @@ android {
 
 dependencies {
     // FFmpeg(libx264 + 全部内置滤镜,tmix/minterpolate 均为内置滤镜)。
-    // 原版 com.arthenica 已于 2025-04 从 Maven Central 移除,使用社区维护的
-    // full-gpl fork(内容等同 ffmpeg-kit-full-gpl 6.0)。
-    implementation("io.github.xch168:ffmpeg-kit-full-gpl:1.0.2")
+    // 原版 com.arthenica 已于 2025-04 从 Maven Central 移除;xch168 fork 是空壳 AAR,
+    // 故使用社区维护的 ffmpegkit-maintained(FFmpeg 8.1,保留原包名)。
+    implementation("dev.ffmpegkit-maintained:ffmpeg-kit-min-gpl:8.1.7")
 
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
     implementation("androidx.activity:activity-compose:1.9.3")
