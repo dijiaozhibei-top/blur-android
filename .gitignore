@@ -11,6 +11,14 @@ build/
 bin/
 out/
 
+# android
+android/.gradle/
+android/local.properties
+android/.cxx/
+android/release.keystore
+*.jks
+*.keystore
+
 # visual studio
 .vs
 

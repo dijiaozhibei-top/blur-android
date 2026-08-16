@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 运动模糊图标:一个清晰色块与渐隐的残影 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="#6EA8FE"
+        android:pathData="M30,49 h16 v10 h-16 z" />
+
+    <path
+        android:fillColor="#6EA8FE"
+        android:fillAlpha="0.55"
+        android:pathData="M50,49 h8 v10 h-8 z" />
+
+    <path
+        android:fillColor="#6EA8FE"
+        android:fillAlpha="0.30"
+        android:pathData="M61,49 h7 v10 h-7 z" />
+
+    <path
+        android:fillColor="#6EA8FE"
+        android:fillAlpha="0.14"
+        android:pathData="M71,49 h6 v10 h-6 z" />
+</vector>
