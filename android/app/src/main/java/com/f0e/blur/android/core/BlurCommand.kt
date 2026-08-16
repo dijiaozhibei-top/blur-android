@@ -40,10 +40,12 @@ object BlurCommand {
         if (weights.error != null) {
             return PlanResult.Error(weights.error)
         }
-        val weightList = weights.weights ?: emptyList()
+        // 单帧窗口(输出帧率达到输入帧率)没有实际混合效果,跳过 tmix
+        val weightList = if (blended >= 2) weights.weights!! else emptyList()
 
         val mixFps = if (weightList.isEmpty()) outputFps else outputFps * blended
-        return PlanResult.Ok(RenderPlan(outputFps, blended, mixFps, weightList))
+        val blendedOut = if (weightList.isEmpty()) 0 else blended
+        return PlanResult.Ok(RenderPlan(outputFps, blendedOut, mixFps, weightList))
     }
 
     fun ffmpegArguments(
