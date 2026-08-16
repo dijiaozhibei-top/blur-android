@@ -17,6 +17,23 @@ data class VideoInfo(
     val durationMs: Long
 )
 
+/** 把异常及其完整 cause 链格式化为可读文本,用于界面错误提示 */
+fun Throwable.chainDescription(): String = buildString {
+    var current: Throwable? = this@chainDescription
+    var first = true
+    while (current != null) {
+        if (!first) {
+            append("\n原因: ")
+        }
+        append(current.javaClass.simpleName)
+        current.message?.takeIf { it.isNotBlank() }?.let {
+            append(": ").append(it)
+        }
+        first = false
+        current = current.cause?.takeIf { it !== current }
+    }
+}
+
 /** 用 FFprobe 探测视频信息(分辨率、帧率、时长),并从 content resolver 取文件名 */
 object VideoProbe {
 
@@ -49,7 +66,7 @@ object VideoProbe {
                 IllegalStateException("FFmpeg 原生库加载失败:当前设备的 CPU 架构不受支持(${e.message})")
             )
         } catch (e: Throwable) {
-            Result.failure(e)
+            Result.failure(IllegalStateException(e.chainDescription(), e))
         }
     }
 

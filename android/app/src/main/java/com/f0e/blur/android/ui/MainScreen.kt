@@ -53,6 +53,7 @@ fun BlurApp(viewModel: AppViewModel) {
     val video by viewModel.video.collectAsStateWithLifecycle()
     val renderState by viewModel.renderState.collectAsStateWithLifecycle()
     val probing by viewModel.probing.collectAsStateWithLifecycle()
+    val nativeError by viewModel.nativeError.collectAsStateWithLifecycle()
 
     val pickVideo = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -78,11 +79,40 @@ fun BlurApp(viewModel: AppViewModel) {
         ) {
             Spacer(Modifier.height(4.dp))
 
+            if (nativeError != null) {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            "FFmpeg 初始化失败",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Text(
+                            nativeError ?: "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Text(
+                            "本机无法运行 FFmpeg 原生库,渲染功能不可用。请把上面的错误信息反馈给开发者。",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
             VideoCard(
                 video = video,
                 probing = probing,
                 rendering = rendering,
-                onPick = { pickVideo.launch(arrayOf("video/*")) }
+                onPick = {
+                    if (nativeError == null) {
+                        pickVideo.launch(arrayOf("video/*"))
+                    }
+                }
             )
 
             SettingsCard(settings = settings, videoFps = video?.fps, enabled = !rendering) {

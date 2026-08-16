@@ -45,6 +45,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val _probing = MutableStateFlow(false)
     val probing: StateFlow<Boolean> = _probing.asStateFlow()
 
+    /** FFmpeg 原生库初始化失败时的根因描述,非空表示本机不可用 */
+    private val _nativeError = MutableStateFlow<String?>(RenderEngine.warmUp())
+    val nativeError: StateFlow<String?> = _nativeError.asStateFlow()
+
     private val engine = RenderEngine(appContext)
     private var renderJob: Job? = null
 

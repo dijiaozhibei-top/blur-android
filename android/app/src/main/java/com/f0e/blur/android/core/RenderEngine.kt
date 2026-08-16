@@ -16,6 +16,20 @@ import kotlin.coroutines.resume
  */
 class RenderEngine(private val context: Context) {
 
+    companion object {
+        /**
+         * 提前触发 ffmpeg-kit 类加载与原生库加载。
+         * 失败时返回完整异常链(首次失败的 cause 才包含根因,
+         * 之后再访问只会得到只有类名的 NoClassDefFoundError)。
+         */
+        fun warmUp(): String? = try {
+            FFmpegKitConfig.setLogLevel(com.arthenica.ffmpegkit.LogLevel.AV_LOG_INFO)
+            null
+        } catch (t: Throwable) {
+            t.chainDescription()
+        }
+    }
+
     data class RenderResult(
         val success: Boolean,
         val output: String? = null,
@@ -33,7 +47,7 @@ class RenderEngine(private val context: Context) {
     } catch (e: UnsatisfiedLinkError) {
         RenderResult(false, error = "FFmpeg 原生库加载失败:当前设备的 CPU 架构不受支持(${e.message})")
     } catch (e: Throwable) {
-        RenderResult(false, error = e.message ?: e.toString())
+        RenderResult(false, error = e.chainDescription())
     }
 
     private suspend fun renderInternal(
