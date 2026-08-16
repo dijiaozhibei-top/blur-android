@@ -86,32 +86,37 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val currentSettings = _settings.value
 
         renderJob = viewModelScope.launch {
-            _renderState.value = RenderState.Running(0f)
+            try {
+                _renderState.value = RenderState.Running(0f)
 
-            val result = engine.render(
-                inputUri = currentVideo.uri,
-                settings = currentSettings,
-                videoFps = currentVideo.fps,
-                durationMs = currentVideo.durationMs,
-                onProgress = { progress ->
-                    _renderState.value = RenderState.Running(progress)
-                }
-            )
+                val result = engine.render(
+                    inputUri = currentVideo.uri,
+                    settings = currentSettings,
+                    videoFps = currentVideo.fps,
+                    durationMs = currentVideo.durationMs,
+                    onProgress = { progress ->
+                        _renderState.value = RenderState.Running(progress)
+                    }
+                )
 
-            if (result.success && result.output != null) {
-                val cacheFile = File(result.output)
-                val outputName = outputFileName(currentVideo.name, currentSettings)
-                try {
-                    saveToGallery(cacheFile, outputName)
-                    _renderState.value = RenderState.Done(outputName)
-                } catch (e: Exception) {
-                    _renderState.value = RenderState.Error("保存到相册失败:${e.message}")
-                } finally {
-                    cacheFile.delete()
+                if (result.success && result.output != null) {
+                    val cacheFile = File(result.output)
+                    val outputName = outputFileName(currentVideo.name, currentSettings)
+                    try {
+                        saveToGallery(cacheFile, outputName)
+                        _renderState.value = RenderState.Done(outputName)
+                    } catch (e: Exception) {
+                        _renderState.value = RenderState.Error("保存到相册失败:${e.message}")
+                    } finally {
+                        cacheFile.delete()
+                    }
+                } else {
+                    _renderState.value =
+                        RenderState.Error(result.error ?: "渲染失败")
                 }
-            } else {
-                _renderState.value =
-                    RenderState.Error(result.error ?: "渲染失败")
+            } catch (e: Throwable) {
+                // 兜底:任何未预期的异常都转为界面错误提示而不是闪退
+                _renderState.value = RenderState.Error("渲染出错:${e.message ?: e.toString()}")
             }
         }
     }

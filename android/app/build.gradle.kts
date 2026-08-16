@@ -15,9 +15,10 @@ android {
         versionCode = 1
         versionName = (project.findProperty("appVersionName") as String?) ?: "dev"
 
-        // 只打包 64 位 ARM,控制 APK 体积(现代安卓手机均为 arm64)
+        // 打包全部 ABI:arm64 真机、x86_64 模拟器、armeabi-v7a 老设备,
+        // 避免在不受支持的架构上加载原生库时闪退
         ndk {
-            abiFilters += listOf("arm64-v8a")
+            abiFilters += listOf("arm64-v8a", "x86_64", "armeabi-v7a", "x86")
         }
     }
 

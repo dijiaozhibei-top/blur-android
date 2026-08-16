@@ -28,6 +28,20 @@ class RenderEngine(private val context: Context) {
         videoFps: Float,
         durationMs: Long,
         onProgress: (Float) -> Unit
+    ): RenderResult = try {
+        renderInternal(inputUri, settings, videoFps, durationMs, onProgress)
+    } catch (e: UnsatisfiedLinkError) {
+        RenderResult(false, error = "FFmpeg 原生库加载失败:当前设备的 CPU 架构不受支持(${e.message})")
+    } catch (e: Throwable) {
+        RenderResult(false, error = e.message ?: e.toString())
+    }
+
+    private suspend fun renderInternal(
+        inputUri: Uri,
+        settings: BlurSettings,
+        videoFps: Float,
+        durationMs: Long,
+        onProgress: (Float) -> Unit
     ): RenderResult {
         val plan = when (val result = BlurCommand.buildPlan(settings, videoFps)) {
             is BlurCommand.PlanResult.Ok -> result.plan

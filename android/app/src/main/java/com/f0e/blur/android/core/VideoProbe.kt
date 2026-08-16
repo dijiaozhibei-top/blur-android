@@ -44,7 +44,11 @@ object VideoProbe {
                     durationMs = ((info.duration?.toDoubleOrNull() ?: 0.0) * 1000).toLong()
                 )
             )
-        } catch (e: Exception) {
+        } catch (e: UnsatisfiedLinkError) {
+            Result.failure(
+                IllegalStateException("FFmpeg 原生库加载失败:当前设备的 CPU 架构不受支持(${e.message})")
+            )
+        } catch (e: Throwable) {
             Result.failure(e)
         }
     }
