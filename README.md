@@ -1,230 +1,77 @@
-# Blur
+# Blur 视频动态模糊 · Android 版
+
+原生 Android 应用,为视频添加流畅的动态模糊效果(帧混合模糊)。核心算法移植自桌面版 [f0e/blur](https://github.com/f0e/blur):先把视频插值到高帧率,再将连续多帧按权重混合,重现高帧率录像特有的顺滑运动模糊。
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/adc158b9-8ec4-4e5a-b372-ed1fad9d8d61" width="30%" />
-  <img src="https://github.com/user-attachments/assets/eebbac0d-6fa1-42ed-beeb-e85ea93838b6" width="30%" />
-  <img src="https://github.com/user-attachments/assets/e8b749dc-9232-4e45-93b4-8df2e3854ffb" width="30%" />
+  <a href="https://github.com/dijiaozhibei-top/blur-android/releases/latest">
+    <img src="https://img.shields.io/badge/下载-最新版%20APK-6EA8FE" alt="下载 APK"/>
+  </a>
+  <img src="https://img.shields.io/badge/平台-Android%2010%2B-3DDC84" alt="Android 10+"/>
+  <img src="https://img.shields.io/badge/架构-arm64--v8a%20%7C%20x86__64%20%7C%20armeabi--v7a%20%7C%20x86-blue" alt="全架构"/>
 </p>
 
-[![Downloads](https://img.shields.io/github/downloads/f0e/blur/total?label=Downloads)](https://github.com/f0e/blur/releases/latest) [![Discord](https://img.shields.io/discord/1392389164153962640?style=flat&label=Discord)](https://discord.gg/B5BK9GMN87)
+## 下载
 
-Blur is a native desktop application made for easily and efficiently adding motion blur to videos through frame blending, with the ability to utilise frame interpolation and more.
+- **[APK 直链(最新版)](https://github.com/dijiaozhibei-top/blur-android/releases/latest/download/blur-Android-2.45.apk)**
+- [全部版本](https://github.com/dijiaozhibei-top/blur-android/releases)
 
-Join the [Discord](https://discord.gg/B5BK9GMN87) to share your configs, render tests and ask the community for help.
+要求 Android 10 及以上。APK 包含全部四种 CPU 架构(真机 / 模拟器均可),已签名,下载后直接安装。
 
-## Download
+## 功能
 
-- [Windows installer](https://github.com/f0e/blur/releases/latest/download/blur-Windows-Installer-x64.exe)
-- [macOS installer](https://github.com/f0e/blur/releases/latest/download/blur-macOS-Release-arm64.dmg)
-- [Linux (requires manual installation of dependencies)](https://github.com/f0e/blur/releases/latest/download/blur-Linux-Release-x64.tar.gz)
+- **核心模糊管线**:插值到高帧率(FFmpeg 运动补偿/帧混合)→ 加权帧混合(`tmix`)→ x264 编码,与桌面版同一套权重算法
+- **8 种混合权重**:均衡 / 高斯对称 / 维加斯 / 金字塔 / 高斯 / 递增 / 递减 / 反高斯(公式逐函数移植自桌面版 `src/common/weighting.cpp`,数值一致)
+- **设置持久化**:所有参数自动保存,下次打开即用
+- **输出自动入库**:渲染完成自动保存到 相册 › 电影 › Blur,无需任何存储权限
+- **实时管线预览**:渲染前即显示"插值到 X fps,每 N 帧混合为 1 帧",并内置慢速组合警告
 
-### Beta releases
+## 使用方法
 
-I often release beta versions with new functionality before I think they're stable enough for a proper release. To test these releases, [visit the Releases tab of the repo.](https://github.com/f0e/blur/releases) To receive beta update notifications you can enable `include beta updates` in your `blur.cfg` found in your config folder. Any feedback or issue reporting on these releases is greatly appreciated :)
+1. 选择视频(支持 mp4 / mkv / mov 等常见格式)
+2. 调整设置:
 
-### macOS notes
+| 设置 | 说明 |
+|------|------|
+| 模糊量 | 0 = 不模糊,1 = 完全混合,越大越平滑(鬼影越多) |
+| 输出帧率 | 定值(如 60fps)或倍数模式 |
+| 插值帧率 | 插值目标帧率,默认 5 倍(与桌面版推荐一致);倍数越高模糊越细腻也越慢 |
+| 插值模式 | 运动补偿(慢而准)/ 帧混合(快) |
+| 混合权重 | 帧混合时各帧的权重曲线 |
+| 输出画质 | CRF,越低质量越好(18 左右为宜) |
+| 输出分辨率 | 原画 / 1080p / 720p / 480p,降分辨率可大幅提速 |
 
-> After opening on Mac for the first time you'll get a 'Blur is damaged and can't be opened.' error. To fix this, run `xattr -dr com.apple.quarantine /Applications/blur.app` in Terminal to unquarantine it.\*
+3. 点「开始渲染」,完成后自动保存到相册
 
-> The default interpolation program on macOS is RIFE, unlike Windows and Linux. RIFE is more accurate than SVP, but quite a bit slower. The reason for this difference is because because using SVP for interpolation on macOS requires that [SVP Manager](https://www.svp-team.com/get/) be running, or you'll get a red border around videos. (This software is paid, and not affiliated with Blur)
+## 性能建议
 
-### Linux notes
+运动补偿插值为纯 CPU 计算,在手机上较慢,请按需选择:
 
-Requires manual installation of dependencies. [See here for the list of dependencies.](#linux-dependency-requirements)
+| 方案 | 大致耗时(1 分钟 1080p 视频) | 适用 |
+|------|------|------|
+| 480p + 帧混合 | 分钟级 | 快速预览模糊方向 |
+| 720p + 运动补偿 + 3x | 约 20-40 分钟 | 出样片确认效果 |
+| 1080p + 运动补偿 + 5x | 数小时 | 出正式片(与桌面版默认一致,建议挂机) |
 
-## Features
+## 与 Windows 桌面版的差异
 
-The amount of motion blur is easily configurable, and there are additional options to enable other features such as interpolating the video's fps. This can be used to generate 'fake' motion blur through frame blending the interpolated footage. This motion blur does not blur non-moving parts of the video, like the HUD in gameplay footage.
+桌面版依赖 VapourSynth + RIFE/SVP(GPU 插值插件),这些组件无法在 Android 运行,因此 Android 版:
 
-The program can also be used in the command line via `blur-cli`, use -h or --help for more information.
+- 插值由 FFmpeg `minterpolate` 运动补偿替代(同类算法,质量略低于 RIFE)
+- 暂不支持:视频去重、亮度/对比度/饱和度滤镜、时间缩放、自定义 FFmpeg 参数、预设管理
+- 模糊量 > 1 时混合窗口为块式(与桌面版的滑窗略有差异),视觉效果近似
 
-## Sample output
+桌面版完整功能请移步上游 [f0e/blur](https://github.com/f0e/blur)(Windows / macOS / Linux)。
 
-### 600fps footage, blurred with 0.6 blur amount
+## 构建
 
-![600fps footage, blurred with 0.6 blur amount](https://i.imgur.com/Hk0XIPe.jpg)
+```bash
+cd android
+./gradlew assembleDebug        # 需要 JDK 17 + Android SDK
+```
 
-### 60fps footage, interpolated to 600fps, blurred with 0.6 blur amount
+推送到 GitHub 后由 [Android workflow](.github/workflows/android.yaml) 自动运行单元测试并构建 release APK;打 `v*` 标签会自动发布到 Release。
 
-![60fps footage, interpolated to 600fps, blurred with 0.6 blur amount](https://i.imgur.com/I4QFWGc.jpg)
+## 许可与致谢
 
-As visible from these images, the interpolated 60fps footage produces motion blur that is comparable to actual 600fps footage.
-
----
-
-## Recommended settings for gameplay footage:
-
-Most of the default settings are what I find work the best, but some settings can depend on your preferences.
-
-### Blur amount
-
-For 60fps footage:
-
-| intent                  | amount  |
-| ----------------------- | ------- |
-| Maximum blur/smoothness | >1      |
-| Normal blur             | 1       |
-| Medium blur             | 0.5     |
-| Low blur                | 0.2-0.3 |
-
-To preserve your old blur amount when changing framerate use the following formula:
-
-`[new blur amount] = [old blur amount] × ([new fps] / [old fps])`
-
-So normal blur at 30fps becomes 0.5, etc.
-
-### Interpolated fps
-
-Results can become worse if this is too high. In general I recommend around 5x the input fps. Also SVP seems to only be able to interpolate up to 10x the input fps, so don't bother trying anything higher than that.
-
-## Notes
-
-### Limiting smearing
-
-Using blur on 60fps footage results in clean motion blur, but occasionally leaves some smearing artifacts. To remove these artifacts, higher framerate source footage can be used. Recording with software such as OBS at framerates like 120/180fps will result in a greatly reduced amount of artifacting.
-
-### Preventing unsmooth output
-
-If your footage contains duplicate frames then occasionally blurred frames will look out of place, making the video seem unsmooth at points. The 'deduplicate' option will automatically fill in duplicated frames with interpolated frames to prevent this from happening.
-
-### Frameserver output
-
-Blur supports rendering from frameservers. This means you can avoid having to run blur on your input videos when video editing. When rendering, simply output (make sure your project is high framerate) to the frameserver and then drag the generated AVI into blur. Note that some video editing software might limit the maximum project framerate.
-
-## Config settings explained:
-
-### blur
-
-- blur - whether or not the output video file will have motion blur
-- blur amount - if blur is enabled, this is the amount of motion blur (0 = no blur, 1 = fully blend every frame together, 1+ = more blur/ghosting)
-- blur output fps - if blur is enabled, this is the fps the output video will be. can be a framerate (e.g. 600) or a multiplier (e.g. 5x)
-- blur weighting - weighting function to use when blending frames. options are listed below. also: [view weighting comparison graphs.](tests/plot_weighting_functions/weighting_functions.pdf)
-  - equal - each frame is blended equally
-  - gaussian_sym
-  - vegas
-  - pyramid
-  - gaussian
-  - ascending
-  - descending
-  - gaussian_reverse
-  - custom weights - custom comma-separated frame weights, e.g. 5, 3, 3, 2, 1. higher numbers indicate frames being more visible when blending, lower numbers mean they are less so.
-
-### interpolation
-
-- interpolate - whether or not the input video file will be interpolated to a higher fps
-- interpolated fps - if interpolate is enabled, this is the fps that the input file will be interpolated to (before blurring). can be a set fps number or a multiplier (append x to end e.g. `5x`)
-- interpolation method - method used for interpolation:
-  - Quality: RIFE > svp
-  - Speed: svp > RIFE
-  - Note: On macOS, SVP requires SVP Manager to be open or a red border will appear. It provides a 30-day trial, but then costs $24.99 for a lifetime license. RIFE can always be used however, but it is slower than SVP.
-
-### pre-interpolation
-
-- pre-interpolation - enable pre-interpolation using a more accurate but slower AI model before main interpolation
-- pre-interpolated fps - FPS to pre-interpolate input video to (before blurring). can be a set fps number or a multiplier (append x to end e.g. `5x`)
-
-### rendering
-
-- quality - [crf](https://trac.ffmpeg.org/wiki/Encode/H.264#crf) of the output video (may be different if using GPU encoding) - (0 = lossless quality, 51 = really bad)
-- deduplicate - removes duplicate frames and generates new interpolated frames to take their place. fixes 'unsmooth' looking output caused by stuttering in recordings
-- deduplicate range - amount of frames beyond the current frame to look for unique frames when deduplicating. make it higher if your footage is at a lower FPS than it should be (e.g. choppy 120fps gameplay recorded at 240fps), lower it if your blurred footage starts blurring static elements such as menu screens
-- deduplicate threshold - threshold of movement that triggers deduplication. turn on debug in advanced and render a video to embed text showing the movement in each frame
-- deduplicate method - method used for deduplication:
-  - Quality: RIFE > svp
-  - Speed: old > svp > RIFE
-- preview - opens a render preview window
-- detailed filenames - adds blur settings to generated filenames
-- copy dates - copies over the modified date from the input file to the output file
-
-### gpu acceleration
-
-- gpu decoding - uses gpu when decoding
-- gpu interpolation - uses gpu when interpolating
-- gpu encoding - uses gpu when rendering
-- gpu type (nvidia/amd/intel) - your gpu type
-
-### timescale
-
-- input timescale - timescale of the input video file (will be sped up/slowed down accordingly)
-- output timescale - timescale of the output video file
-- adjust timescaled audio pitch - will pitch shift audio when sped up/slowed down
-
-### filters
-
-- brightness - brightness of the output video
-- saturation - saturation of the output video
-- contrast - contrast of the output video
-
-### advanced rendering
-
-- video container - the output video container format (e.g. `mp4`, `mkv`, `avi`)
-- custom ffmpeg filters - custom ffmpeg filters to be used when rendering (replaces gpu & quality options)
-- debug - shows debug window, prints commands used by blur
-
-### advanced blur
-
-- blur weighting gaussian std dev - standard deviation used in the gaussian weighting
-- blur weighting gaussian mean - mean used in the gaussian weighting
-- blur weighting gaussian bound - bound used in the gaussian weighting
-
-### advanced interpolation
-
-- SVP interpolation preset - preset used for framerate interpolation when using SVP, one of:
-  - weak (default) - _[explained further here](https://www.spirton.com/uploads/InterFrame/InterFrame2.html)_
-  - film - _[explained further here](https://www.spirton.com/uploads/InterFrame/InterFrame2.html)_
-  - smooth - _[explained further here](https://www.spirton.com/uploads/InterFrame/InterFrame2.html)_
-  - default _(default svp settings)_
-- SVP interpolation algorithm - algorithm used for framerate interpolation when using SVP, one of:
-
-  - 13 - best overall quality and smoothness (default) - _[explained further here](https://www.spirton.com/uploads/InterFrame/InterFrame2.html)_
-  - 23 - sometimes smoother than 13, but can result in smearing - _[explained further here](https://www.spirton.com/uploads/InterFrame/InterFrame2.html)_
-  - 1 - _[explained further here](https://www.svp-team.com/wiki/Manual:SVPflow)_
-  - 2 - _[explained further here](https://www.spirton.com/uploads/InterFrame/InterFrame2.html)_
-  - 11 - _[explained further here](https://www.svp-team.com/wiki/Manual:SVPflow)_
-  - 21 - _[explained further here](https://www.svp-team.com/wiki/Manual:SVPflow)_
-
-- interpolation block size - block size used for framerate interpolation. higher block size = less accurate blur, will result in spaces around non-moving objects of the frame, also renders faster. lower block size = more accurate blur, but can result in artifacting, also slower. for higher framerate input videos lower block size can be better. options:
-
-  - 4
-  - 8 (default)
-  - 16
-  - 32
-
-- interpolation mask area - mask amount used when interpolating. higher values can mean static objects are blurred less, but can also result in less smooth output (moving parts of the image can be mistaken for static parts and don't get blurred)
-
-### manual svp override
-
-You can customise the SVP interpolation settings even further by manually defining json parameters. [see here](https://www.svp-team.com/wiki/Manual:SVPflow) for explanations on settings
-
-- manual svp: enables manual svp settings, true/false
-- super string: json string used as input in [SVSuper](https://www.svp-team.com/wiki/Manual:SVPflow#SVSuper.28source.2C_params_string.29)
-- vectors string: json string used as input in [SVAnalyse](https://www.svp-team.com/wiki/Manual:SVPflow#SVAnalyse.28super.2C_params_string.2C_.5Bsrc.5D:_clip.29)
-- smooth string: json string used as input in [SVSmoothFps](https://www.svp-team.com/wiki/Manual:SVPflow#SVSmoothFps.28source.2C_super.2C_vectors.2C_params_string.2C_.5Bsar.5D:_float.2C_.5Bmt.5D:_integer.29)
-
-These options are not visible by default, add them to your config and they will be used.
-
-## Linux dependency requirements
-
-### General list of things you need
-
-If your distro isn't listed below, here's a list of the things you'll need to install.
-
-- VapourSynth
-- FFmpeg
-- VapourSynth plugins (install to your system vapoursynth plugin path or [your blur binary directory]/vapoursynth-plugins)
-  - [SVPflow](https://web.archive.org/web/20190322064557/http://www.svp-team.com/files/gpl/svpflow-4.2.0.142.zip)
-  - [BestSource](https://github.com/vapoursynth/bestsource) ([my automated build](https://github.com/f0e/blur-plugin-builds/releases/latest))
-  - [MVTools](https://github.com/dubhater/vapoursynth-mvtools) ([my automated build](https://github.com/f0e/blur-plugin-builds/releases/latest))
-  - [Akarin](https://github.com/AkarinVS/vapoursynth-plugin) (or this [fork which supports newer LLVM versions](https://github.com/Jaded-Encoding-Thaumaturgy/akarin-vapoursynth-plugin)) ([my automated build](https://github.com/f0e/blur-plugin-builds/releases/latest))
-  - [RIFE-ncnn-Vulkan](https://github.com/styler00dollar/VapourSynth-RIFE-ncnn-Vulkan/releases/latest)
-  - [Adjust](https://github.com/f0e/Vapoursynth-adjust/releases/latest)
-
-### Arch required packages
-
-`paru -S vapoursynth ffmpeg vapoursynth-plugin-svpflow vapoursynth-plugin-bestsource vapoursynth-plugin-mvtools vapoursynth-plugin-vsakarin-av1an-git vapoursynth-plugin-rife-ncnn-vulkan`
-
-And manually install [adjust](https://github.com/f0e/Vapoursynth-adjust/releases/latest)
-
----
-
-\*in the future I might buy a dev cert, but $99 a year atm doesn't seem worth it 😅
+- 本仓库 fork 自 [f0e/blur](https://github.com/f0e/blur)(GPL 许可),权重算法与默认参数与其保持一致
+- FFmpeg 运行时:[ffmpeg-kit](https://github.com/ffmpegkit-maintained/ffmpeg-kit)(社区维护版,FFmpeg 8.1)
