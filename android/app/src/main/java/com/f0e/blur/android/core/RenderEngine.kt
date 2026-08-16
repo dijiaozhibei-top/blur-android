@@ -23,7 +23,8 @@ class RenderEngine(private val context: Context) {
          * 之后再访问只会得到只有类名的 NoClassDefFoundError)。
          */
         fun warmUp(): String? = try {
-            FFmpegKitConfig.setLogLevel(com.arthenica.ffmpegkit.LogLevel.AV_LOG_INFO)
+            // 调用任意静态方法触发 FFmpegKitConfig 类初始化(其中的 static 块负责加载原生库)
+            FFmpegKitConfig.setSessionHistorySize(1)
             null
         } catch (t: Throwable) {
             t.chainDescription()
