@@ -91,4 +91,23 @@ class BlurCommandTest {
 
         assertTrue(args.contains("fps=60,tmix=frames=2"))
     }
+
+    @Test
+    fun `scale filter prepended when resolution capped`() {
+        val settings = BlurSettings(outputScale = com.f0e.blur.android.data.OutputScale.P720)
+        val plan = BlurCommand.buildPlan(settings, videoFps = 60f) as BlurCommand.PlanResult.Ok
+        val args = BlurCommand.ffmpegArguments("in.mp4", "out.mp4", settings, plan.plan).joinToString(" ")
+
+        // 横屏限高、竖屏限宽、低分辨率不放大
+        assertTrue(args.contains("scale='if(gt(iw,ih),-2,min(720,ih))':'if(gt(iw,ih),min(720,iw),-2)',minterpolate"))
+    }
+
+    @Test
+    fun `no scale filter at original resolution`() {
+        val settings = BlurSettings(outputScale = com.f0e.blur.android.data.OutputScale.ORIGINAL)
+        val plan = BlurCommand.buildPlan(settings, videoFps = 60f) as BlurCommand.PlanResult.Ok
+        val args = BlurCommand.ffmpegArguments("in.mp4", "out.mp4", settings, plan.plan).joinToString(" ")
+
+        assertTrue(!args.contains("scale="))
+    }
 }

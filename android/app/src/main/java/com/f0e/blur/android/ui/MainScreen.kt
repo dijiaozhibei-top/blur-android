@@ -44,6 +44,7 @@ import com.f0e.blur.android.AppViewModel
 import com.f0e.blur.android.core.BlurCommand
 import com.f0e.blur.android.data.BlurSettings
 import com.f0e.blur.android.data.FpsMode
+import com.f0e.blur.android.data.OutputScale
 import com.f0e.blur.android.core.Weighting
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -367,6 +368,31 @@ private fun SettingsCard(
                 hint = "数值越低画质越好、文件越大(18 左右为宜)",
                 onValueChange = { onUpdate(settings.copy(quality = it.toInt())) }
             )
+
+            // 输出分辨率
+            Text("输出分辨率", style = MaterialTheme.typography.bodyMedium)
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                val options = listOf(
+                    OutputScale.ORIGINAL to "原画",
+                    OutputScale.P1080 to "1080p",
+                    OutputScale.P720 to "720p",
+                    OutputScale.P480 to "480p"
+                )
+                options.forEachIndexed { index, (scale, label) ->
+                    SegmentedButton(
+                        selected = settings.outputScale == scale,
+                        onClick = { if (enabled) onUpdate(settings.copy(outputScale = scale)) },
+                        shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size)
+                    ) {
+                        Text(label, maxLines = 1)
+                    }
+                }
+            }
+            Text(
+                "降低分辨率可大幅缩短渲染时间(720p 约比 1080p 快 2 倍以上),适合先出样片确认效果",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -476,7 +502,7 @@ private fun RenderSection(
                             val plan = planResult.plan
                             Text(
                                 if (plan.weights.isEmpty()) {
-                                    "当前设置:输出帧率不低于输入帧率,不会产生模糊效果,仅调整帧率"
+                                    "当前设置:输出帧率不低于(插值后)帧率,不会产生模糊效果,仅调整帧率"
                                 } else {
                                     val source =
                                         if (settings.interpolate) "插值" else "重采样"
@@ -486,6 +512,19 @@ private fun RenderSection(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            // 运动补偿 + 高倍插值 + 高分辨率在手机 CPU 上极慢,提前警示
+                            val slowRender = settings.interpolate &&
+                                !settings.fastInterpolation &&
+                                plan.mixFps >= 240f &&
+                                (settings.outputScale.maxHeight ?: 1080) >= 1080
+                            if (slowRender) {
+                                Text(
+                                    "⚠ 该组合在手机上渲染非常慢(可能数小时)。提速:插值模式改「帧混合」、" +
+                                        "降低插值倍数、或输出分辨率选 720p/480p 先出样片",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
                         }
 
                         is BlurCommand.PlanResult.Error -> {

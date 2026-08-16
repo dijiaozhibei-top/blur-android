@@ -74,7 +74,13 @@ object BlurCommand {
             ",tmix=frames=${plan.blendedFrames}:weights='${formatWeights(plan.weights)}'"
         }
 
-        val filter = "[0:v]$source$tmix,format=yuv420p[v]"
+        // 短边限制的缩放:横屏限高、竖屏限宽;min 确保不放大低分辨率视频。
+        // 表达式含逗号,参数值必须用单引号包裹以免被 filtergraph 解析器拆开
+        val scaleFilter = settings.outputScale.maxHeight?.let { h ->
+            "scale='if(gt(iw,ih),-2,min($h,ih))':'if(gt(iw,ih),min($h,iw),-2)',"
+        } ?: ""
+
+        val filter = "[0:v]$scaleFilter$source$tmix,format=yuv420p[v]"
 
         return listOf(
             "-y",

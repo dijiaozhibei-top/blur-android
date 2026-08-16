@@ -14,6 +14,14 @@ private val Context.dataStore by preferencesDataStore(name = "blur_settings")
 
 enum class FpsMode { MULTIPLIER, FIXED }
 
+/** 输出分辨率上限(按短边限制,竖屏视频自动按宽度缩放) */
+enum class OutputScale(val maxHeight: Int?) {
+    ORIGINAL(null),
+    P1080(1080),
+    P720(720),
+    P480(480)
+}
+
 /**
  * 渲染设置。默认值对齐桌面版 config_blur.h:
  * 模糊量 1.0、输出帧率 60、插值倍数 5x(README 推荐)、权重函数 equal、CRF 18。
@@ -35,7 +43,8 @@ data class BlurSettings(
     val fastInterpolation: Boolean = false,
     val weighting: Weighting.Type = Weighting.Type.EQUAL,
     /** x264 CRF,越低质量越高 */
-    val quality: Int = 18
+    val quality: Int = 18,
+    val outputScale: OutputScale = OutputScale.ORIGINAL
 ) {
     fun outputFps(inputFps: Float): Float = when (outputFpsMode) {
         FpsMode.MULTIPLIER -> inputFps * outputFpsMultiplier
@@ -75,7 +84,10 @@ suspend fun Context.loadSettings(): BlurSettings {
         weighting = prefs[KEY_WEIGHTING]?.let { ordinal ->
             Weighting.Type.entries.getOrNull(ordinal)
         } ?: Weighting.Type.EQUAL,
-        quality = prefs[KEY_QUALITY] ?: 18
+        quality = prefs[KEY_QUALITY] ?: 18,
+        outputScale = prefs[KEY_SCALE]?.let { ordinal ->
+            OutputScale.entries.getOrNull(ordinal)
+        } ?: OutputScale.ORIGINAL
     )
 }
 
@@ -92,6 +104,7 @@ suspend fun Context.saveSettings(settings: BlurSettings) {
         prefs[KEY_FAST] = settings.fastInterpolation
         prefs[KEY_WEIGHTING] = settings.weighting.ordinal
         prefs[KEY_QUALITY] = settings.quality
+        prefs[KEY_SCALE] = settings.outputScale.ordinal
     }
 }
 
@@ -106,3 +119,4 @@ private val KEY_INT_FIXED_FPS = intPreferencesKey("int_fps_fixed")
 private val KEY_FAST = booleanPreferencesKey("fast_interpolation")
 private val KEY_WEIGHTING = intPreferencesKey("weighting")
 private val KEY_QUALITY = intPreferencesKey("quality")
+private val KEY_SCALE = intPreferencesKey("output_scale")

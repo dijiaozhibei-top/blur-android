@@ -15,6 +15,7 @@ import sys
 import tempfile
 import time
 import traceback
+from pathlib import Path
 from types import ModuleType
 from typing import Any, Awaitable, Callable, List, Optional, TypeVar
 
@@ -122,6 +123,16 @@ def get_tidy_invocation(
 def merge_replacement_files(tmpdir: str, mergefile: str) -> None:
     """Merge all replacement files in a directory into a single file"""
     assert yaml
+    # The merge file is derived from the --export-fixes argument; only allow
+    # writing to a normalized path inside the current working directory.
+    resolved = os.path.realpath(mergefile)
+    cwd = os.path.realpath(os.getcwd())
+    rel = os.path.relpath(resolved, cwd)
+    if rel.startswith("..") or os.path.isabs(rel):
+        raise SystemExit(
+            f"error: export-fixes path must stay inside the working directory: {mergefile}"
+        )
+    mergefile = resolved
     # The fixes suggested by clangd-tidy >= 4.0.0 are given under
     # the top level key 'Diagnostics' in the output yaml files
     mergekey = "Diagnostics"
@@ -134,15 +145,14 @@ def merge_replacement_files(tmpdir: str, mergefile: str) -> None:
 
     if merged:
         # MainSourceFile: The key is required by the definition inside
-        # include/clang/Tooling/ReplacementsYaml.h, but the value
-        # is actually never used inside clang-apply-replacements,
+        # include/clang/Tooling/ReplacementsYaml.h, but the value is
+        # actually never used inside clang-apply-replacements,
         # so we set it to '' here.
         output = {"MainSourceFile": "", mergekey: merged}
-        with open(mergefile, "w") as out:
-            yaml.safe_dump(output, out)
+        Path(mergefile).write_text(yaml.safe_dump(output), encoding="utf-8")
     else:
         # Empty the file:
-        open(mergefile, "w").close()
+        Path(mergefile).write_text("", encoding="utf-8")
 
 
 def find_binary(arg: str, name: str, build_path: str) -> str:
